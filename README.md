@@ -1,2 +1,3 @@
-# parz
-I have not been idle
+# Parz
+Free Monad for Par
+I have not been idle :)
