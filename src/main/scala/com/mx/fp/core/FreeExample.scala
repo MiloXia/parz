@@ -72,7 +72,7 @@ trait FreeExample {
       m match { case Id(a) => k(a) }
   }
 
-  // prog.foldMap(ProdConvo)
+//   prog.foldMap(ProdConvo)
 
   // type CannedResponses = Map[String,String]
   // case class TestConvoLog[A](a: A, convo: List[String])
