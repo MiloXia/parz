@@ -1,6 +1,6 @@
-package com.mx.fp.core
+package com.mx.fp.core.stackless
 
-import com.mx.fp.State
+import com.mx.fp.core.{Coyoneda, Functor, Monad}
 
 trait ~>[F[_],G[_]]{
   def apply[A](fa: F[A]): G[A]
@@ -92,7 +92,7 @@ object FreeTest extends App {
 trait Console[A]
   case object GetLine extends Console[String]
   case class PutLine(line: String) extends Console[Unit]
-  import Free._
+  import com.mx.fp.core.stackless.Free._
   implicit def liftConsole[A](ca: Console[A]): FreeC[Console,A] = liftFC(ca)
   val ioprg = for {
     _ <- PutLine("What is your first name ?")

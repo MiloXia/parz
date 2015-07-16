@@ -1,4 +1,4 @@
-package com.mx.fp.core
+package com.mx.fp.core.stackless
 
 trait Trampoline[+A] {
   final def runT: A = resume match {
