@@ -70,6 +70,22 @@ object NewsLetterOpTest extends App {
         Id(println(s"send $s, $c"))
     }
   }
+  //Option
+  implicit val OptionMonad = Monad.optionMonad
+  object MailEffect2 extends (NewsLetterOp ~> Option) {
+    def apply[A](nl: NewsLetterOp[A]): Option[A] = nl match {
+      case GetSubject(s) =>
+        Some("todo")
+      case GetContent(s) =>
+        Some(XML.loadString("<a>todo</a>"))
+      case GetCollName(s) =>
+        Some("todo")
+      case InitModel =>
+        Some(println("iniModel"))
+      case Send(s, c) =>
+        Some(println(s"send $s, $c"))
+    }
+  }
 
   val doo: FreeNewsLetter[Unit] = for {
     subject <- GetSubject("./a.txt")
@@ -81,4 +97,5 @@ object NewsLetterOpTest extends App {
   } yield ()
 
   doo.foldMap(MailEffect)
+  doo.foldMap(MailEffect2)
 }
