@@ -5,6 +5,8 @@ import scala.collection.immutable.Map
 import com.mx.fp.State
 import com.mx.fp.core.{Monad, Monoid}
 
+import scala.util.Random
+
 /**
  * Created by milo on 15-7-23.
  */
@@ -61,8 +63,16 @@ object ParTest3 extends App {
     }.run(resp)._1
     def add(req: Request[_], value: Any): Responses = State[Responses, Unit] { s =>
       ((), Responses(Map[Request[_], Any](req -> value) ++ s.store))
-    }.run(Responses(Map[Request[_], Any]()))._2
+    }.run(Monoid.zero)._2
+
+    val Monoid = new Monoid[Responses] {
+      def op(resp1: Responses, resp2: Responses) = (resp1, resp2) match {
+        case (Responses(r1), Responses(r2)) => Responses(r1 ++ r2)
+      }
+      val zero: Responses = Responses(Map[Request[_], Any]())
+    }
   }
+
   trait Request[A]
   case class Breakfast(egg: Int, milk: Int)
   case object GetUp extends Request[Unit]
@@ -150,19 +160,21 @@ object ParTest3 extends App {
         println("take a bus")
       case Get(q) =>
         println(q)
-        readLine
+        Random.nextString(10)
       case Put(s) =>
         println(s)
     }
 
     def fetch(l: List[Request[_]]): Responses = {
       l.par.map{ r =>
-        println(s"${Thread.currentThread().getName}")
+        println(s"--${Thread.currentThread().getName}")
         Responses.add(r, translate(r))
-      }.head
+      }.fold(Responses.Monoid.zero)(Responses.Monoid.op)
     }
   }
   early.foldMap(FetchEffect)
+  println("-" * 20)
   late.foldMap(FetchEffect)
+  println("-" * 20)
   test.foldMap(FetchEffect)
 }
