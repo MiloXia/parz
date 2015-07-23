@@ -99,9 +99,10 @@ object ParTest3 extends App {
   implicit def reqMonoid[_]: Monoid[Request[_]] = new Monoid[Request[_]] {
     def op(req1: Request[_], req2: Request[_]): Request[_] = (req1, req2) match {
       case (Requests(l1), Requests(l2)) => Requests(l1 ++ l2)
-      case (Requests(l), r) => Requests(r :: l) //Impossible
-      case (r, Requests(l)) => Requests(r :: l) //Impossible
-      case (r1, r2) => Requests(r1 :: r2 :: Nil)//Impossible
+      case other => throw new Exception(s"bad request $other")
+//      case (Requests(l), r) => Requests(r :: l) //Impossible
+//      case (r, Requests(l)) => Requests(r :: l) //Impossible
+//      case (r1, r2) => Requests(r1 :: r2 :: Nil)//Impossible
     }
     val zero: Request[_] = Requests.empty
   }
