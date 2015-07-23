@@ -17,7 +17,7 @@ object ParTest2 extends App {
     }
     def map[B](f: A => B): Free[F,B] =
       flatMap(f andThen (Done(_)))
-    //app
+    //Applicative
     def map2[B, C](mb: Free[F, B])(f: (A, B) => C)(implicit M: Monoid[F[_]]): Free[F, C] = (this, mb) match {
       case (Done(a), Done(b)) =>
         Done(f(a, b))
@@ -59,8 +59,8 @@ object ParTest2 extends App {
   }
   object Responses extends Responses {
     val store = scala.collection.mutable.Map[Request[_], Any]()
-    def fetch[A](req: Request[A]): A = store.get(req).asInstanceOf[A]
-    def add[A](req: Request[A], value: A) = store += (req -> value)
+    def fetch[A](req: Request[A]): A = store.get(req).get.asInstanceOf[A]
+    def add(req: Request[_], value: Any) = store += (req -> value)
   }
   trait Request[A]
   case class Breakfast(egg: Int, milk: Int)
@@ -71,7 +71,7 @@ object ParTest2 extends App {
   case object GoOut extends Request[Unit]
   case object TakeBus extends Request[Unit]
 
-  //monoid
+  //Monoid
   case class Requests(l: List[Request[_]]) extends Request[Responses]
   object Requests {
     def add[A](req: Request[A]): Requests = Requests(req :: Nil)
@@ -113,11 +113,11 @@ object ParTest2 extends App {
   } yield ()
 
 
-//  val test = for {
-//    a <- Get("get a")
-//    d <- Get("get b").map2(Get("get c"))((b: String, c: String) => b + c)
-//    _ <- Put(a+d)
-//  } yield ()
+  val test = for {
+    a <- Get("get a")
+    d <- Get("get b").map2(Get("get c"))((b: String, c: String) => b + c)
+    _ <- Put(a+d)
+  } yield ()
 
   type Id[A] = A
   implicit val IdMonad: Monad[Id] = new Monad[Id] {
@@ -126,35 +126,37 @@ object ParTest2 extends App {
       m match { case a => k(a) }
   }
 
-  object ConsoleEffect extends (Request ~> Id) {
+  object FetchEffect extends (Request ~> Id) { //F[A] is Requests[Responses]
     def apply[A](nl: Request[A]): Id[A] = nl match {
-      case GetUp =>
+      case GetUp => //Impossible
         println("get up")
-      case Wash =>
+      case Wash => //Impossible
         println("wash")
-      case MakeBreakfast =>
+      case MakeBreakfast => //Impossible
         println("make breakfast")
         Breakfast(2, 1)
-      case Eat(b) =>
+      case Eat(b) => //Impossible
         println(s"eat $b")
-      case GoOut =>
+      case GoOut => //Impossible
         println(s"go out")
-      case TakeBus =>
+      case TakeBus => //Impossible
         println("take a bus")
       case Requests(l) =>
-        //TODO fetch
-        println(s"Do [${l.mkString(",")}] in parallel")
+        if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
+        fetch(l)
         Responses
-      case Get(q) =>
+      case Get(q) => //Impossible
         println(q)
         readLine
-      case Put(s) =>
+      case Put(s) => //Impossible
         println(s)
     }
     def fetch(l: List[Request[_]]): Responses = {
-      l.foreach(r => Responses.add(r, ConsoleEffect(r)))
+      l.foreach(r => Responses.add(r, FetchEffect(r)))
       Responses
     }
   }
-
+  early.foldMap(FetchEffect)
+  late.foldMap(FetchEffect)
+  test.foldMap(FetchEffect)
 }
