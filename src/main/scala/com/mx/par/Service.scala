@@ -5,17 +5,17 @@ import com.mx.par.ParTest3.{Responses, Get, Request}
 /**
  * Created by milo on 15-7-24.
  */
-trait Service[R] {
-  def deal[A](req: Request[A]): Responses
+trait Service[Req] {
+  def deal(req: Req): Responses
 }
 
 object Service {
   implicit object GetService extends Service[Get] {
-    def deal(req: Request[Get]): Responses = {
-      Responses.add(req) //TODO
+    def deal(req: Get): Responses = req match {
+      case Get(q) => Responses.add(req, "aaa")
     }
   }
   def fetch[R: Service](req: R) = {
-    implicitly[R].deal(req)
+    implicitly[Service[R]].deal(req)
   }
 }
