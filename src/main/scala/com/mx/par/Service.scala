@@ -1,6 +1,6 @@
 package com.mx.par
 
-import com.mx.par.ParTest3.{Responses, Get, Request}
+import com.mx.par.day03.{Responses, Get, Request}
 
 /**
  * Created by milo on 15-7-24.

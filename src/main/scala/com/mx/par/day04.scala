@@ -9,7 +9,7 @@ import scala.util.Random
 /**
  * Created by miloxia on 7/26/15.
  */
-object ParTest4 extends App {
+object day04 extends App {
   trait Free[F[_],A] {
     def unit(a: A): Free[F,A] = Done(a)
     def flatMap[B](k: A => Free[F,B]): Free[F,B] = this match {

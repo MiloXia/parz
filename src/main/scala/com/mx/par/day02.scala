@@ -5,7 +5,7 @@ import com.mx.fp.core.{Monad, Monoid}
 /**
  * Created by milo on 15-7-22.
  */
-object ParTest2 extends App {
+object day02 extends App {
 
   trait Free[F[_],A] {
     def unit(a: A): Free[F,A] = Done(a)

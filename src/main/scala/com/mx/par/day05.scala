@@ -1,17 +1,15 @@
 package com.mx.par
 
 import scala.collection.immutable.Map
+import scala.util.Random
 
 import com.mx.fp.State
 import com.mx.fp.core.{Monad, Monoid}
 
-import scala.util.Random
-
 /**
- * Created by milo on 15-7-23.
+ * Created by milo on 15-7-27.
  */
-object ParTest3 extends App {
-
+object day05 extends App {
   trait Free[F[_],A] {
     def unit(a: A): Free[F,A] = Done(a)
     def flatMap[B](k: A => Free[F,B]): Free[F,B] = this match {
@@ -58,7 +56,7 @@ object ParTest3 extends App {
 
   case class Responses(store: Map[Request[_], Any])
   object Responses {//state
-    def fetch[A](req: Request[A], resp: Responses): A = State[Responses, A] { s =>
+  def fetch[A](req: Request[A], resp: Responses): A = State[Responses, A] { s =>
       (s.store(req).asInstanceOf[A], s)
     }.run(resp)._1
     def add(req: Request[_], value: Any): Responses = State[Responses, Unit] { s =>
@@ -100,9 +98,9 @@ object ParTest3 extends App {
     def op(req1: Request[_], req2: Request[_]): Request[_] = (req1, req2) match {
       case (Requests(l1), Requests(l2)) => Requests(l1 ++ l2)
       case other => throw new Exception(s"bad request $other")
-//      case (Requests(l), r) => Requests(r :: l) //Impossible
-//      case (r, Requests(l)) => Requests(r :: l) //Impossible
-//      case (r1, r2) => Requests(r1 :: r2 :: Nil)//Impossible
+      //      case (Requests(l), r) => Requests(r :: l) //Impossible
+      //      case (r, Requests(l)) => Requests(r :: l) //Impossible
+      //      case (r1, r2) => Requests(r1 :: r2 :: Nil)//Impossible
     }
     val zero: Request[_] = Requests.empty
   }
@@ -138,41 +136,53 @@ object ParTest3 extends App {
   }
 
   object FetchEffect extends (Request ~> Id) { //F[A] is Requests[Responses]
-    def apply[A](nl: Request[A]): Id[A] = nl match {
+  def apply[A](nl: Request[A]): Id[A] = nl match {
       case Requests(l) =>
         if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
         fetch(l)
       case _ => throw new Exception("bad cmd")
     }
 
-    private def translate[A](nl: Request[A]): Id[A] = nl match {
-      case GetUp =>
-        println("get up")
-      case Wash =>
-        println("wash")
-      case MakeBreakfast =>
-        println("make breakfast")
-        Breakfast(2, 1)
-      case Eat(b) =>
-        println(s"eat $b")
-      case GoOut =>
-        println(s"go out")
-      case TakeBus =>
-        println("take a bus")
-      case Get(q) =>
-        println(q)
-        Random.nextString(10)
-      case Put(s) =>
-        println(s)
-    }
-
     def fetch(l: List[Request[_]]): Responses = {
       l.par.map{ r =>
         println(s"--${Thread.currentThread().getName}")
-        Responses.add(r, translate(r))
+        Service.fetch(r)
       }.fold(Responses.Monoid.zero)(Responses.Monoid.op)
     }
   }
+  //service
+  trait Service[Request[_]] {
+    def deal[A](req: Request[A]): Responses
+  }
+
+  object Service {
+    implicit object DataService extends Service[Request] {
+      def deal[A](req: Request[A]): Responses = req match {
+        case GetUp =>
+          Responses.add(req, println("get up"))
+        case Wash =>
+          Responses.add(req, println("wash"))
+        case MakeBreakfast =>
+          println("make breakfast")
+          Responses.add(req, Breakfast(2, 1))
+        case Eat(b) =>
+          Responses.add(req, println(s"eat $b"))
+        case GoOut =>
+          Responses.add(req, println(s"go out"))
+        case TakeBus =>
+          Responses.add(req, println("take a bus"))
+        case Get(q) =>
+          println(q)
+          Responses.add(req, Random.nextString(10))
+        case Put(s) =>
+          Responses.add(req, println(s))
+      }
+    }
+    def fetch[R[_]: Service, A](req: R[A]) = {
+      implicitly[Service[R]].deal(req)
+    }
+  }
+
   early.foldMap(FetchEffect)
   println("-" * 20)
   late.foldMap(FetchEffect)
