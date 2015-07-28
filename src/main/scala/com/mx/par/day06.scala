@@ -7,9 +7,9 @@ import com.mx.fp.State
 import com.mx.fp.core.{Monad, Monoid}
 
 /**
- * Created by milo on 15-7-27.
+ * Created by milo on 15-7-28.
  */
-object day05 extends App {
+object day06 extends App {
   trait Free[F[_],A] {
     def unit(a: A): Free[F,A] = Done(a)
     def flatMap[B](k: A => Free[F,B]): Free[F,B] = this match {
@@ -54,20 +54,21 @@ object day05 extends App {
     def apply[A](fa: F[A]): G[A]
   }
 
-  case class Responses(store: Map[Request[_], Any])
+  case class Responses[F[_]](store: Map[F[_], Any])
   object Responses {//state
-    def fetch[A](req: Request[A], resp: Responses): A = State[Responses, A] { s =>
+  def fetch[F[_], A](req: F[A], resp: Responses[F]): A = State[Responses[F], A] { s =>
       (s.store(req).asInstanceOf[A], s)
     }.run(resp)._1
-    def add(req: Request[_], value: Any): Responses = State[Responses, Unit] { s =>
-      ((), Responses(Map[Request[_], Any](req -> value) ++ s.store))
-    }.run(Monoid.zero)._2
 
-    val Monoid = new Monoid[Responses] {
-      def op(resp1: Responses, resp2: Responses) = (resp1, resp2) match {
-        case (Responses(r1), Responses(r2)) => Responses(r1 ++ r2)
+    def add[F[_]](req: F[_], value: Any): Responses[F] = State[Responses[F], Unit] { s =>
+      ((), Responses[F](Map[F[_], Any](req -> value) ++ s.store))
+    }.run(Monoid[F].zero)._2
+
+    implicit def Monoid[F[_]]: Monoid[Responses[F]] = new Monoid[Responses[F]] {
+      def op(resp1: Responses[F], resp2: Responses[F]) = (resp1, resp2) match {
+        case (Responses(r1), Responses(r2)) => Responses[F](r1 ++ r2)
       }
-      val zero: Responses = Responses(Map[Request[_], Any]())
+      val zero: Responses[F] = Responses[F](Map[F[_], Any]())
     }
   }
 
@@ -81,7 +82,7 @@ object day05 extends App {
   case object TakeBus extends Request[Unit]
 
   //Monoid
-  case class Requests(l: List[Request[_]]) extends Request[Responses]
+  case class Requests(l: List[Request[_]]) extends Request[Responses[Request]]
   object Requests {
     def add[A](req: Request[A]): Requests = Requests(req :: Nil)
     def empty = Requests(Nil)
@@ -91,10 +92,10 @@ object day05 extends App {
   case class Put(r: String) extends Request[Unit]
 
   type FreeRequest[A] = Free[Request, A]
-  implicit def lift[A](req: Request[A]): FreeRequest[A] =
-    Blocked(Requests add req, (resp: Responses) => Done(Responses.fetch(req, resp)))
+  implicit def dataFetch[A](req: Request[A]): FreeRequest[A] =
+    Blocked(Requests add req, (resp: Responses[Request]) => Done(Responses.fetch(req, resp)))
 
-  implicit def reqMonoid[_]: Monoid[Request[_]] = new Monoid[Request[_]] {
+  implicit def reqMonoid: Monoid[Request[_]] = new Monoid[Request[_]] {
     def op(req1: Request[_], req2: Request[_]): Request[_] = (req1, req2) match {
       case (Requests(l1), Requests(l2)) => Requests(l1 ++ l2)
       case other => throw new Exception(s"bad request $other")
@@ -136,14 +137,14 @@ object day05 extends App {
   }
 
   object FetchEffect extends (Request ~> Id) { //F[A] is Requests[Responses]
-  def apply[A](nl: Request[A]): Id[A] = nl match {
+    def apply[A](nl: Request[A]): Id[A] = nl match {
       case Requests(l) =>
         if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
         fetch(l)
       case _ => throw new Exception("bad cmd")
     }
 
-    def fetch(l: List[Request[_]]): Responses = {
+    def fetch(l: List[Request[_]]): Responses[Request] = {
       l.par.map{ r =>
         println(s"--${Thread.currentThread().getName}")
         Service.fetch(r)
@@ -152,12 +153,12 @@ object day05 extends App {
   }
   //service
   trait Service[Request[_]] {
-    def deal[A](req: Request[A]): Responses
+    def deal[A](req: Request[A]): Responses[Request]
   }
 
   object Service {
     implicit object DataService extends Service[Request] {
-      def deal[A](req: Request[A]): Responses = req match {
+      def deal[A](req: Request[A]): Responses[Request] = req match {
         case GetUp =>
           Responses.add(req, println("get up"))
         case Wash =>
