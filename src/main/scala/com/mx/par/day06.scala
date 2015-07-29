@@ -152,35 +152,36 @@ object day06 extends App {
     }
   }
   //service
-  trait Service[Request[_]] {
-    def deal[A](req: Request[A]): Responses[Request]
+  trait Service[F[_]] {
+    def deal[A](req: F[A]): Responses[F] = Responses.add(req, fetch(req))
+    def fetch[A](req: F[A]): A
   }
 
   object Service {
     implicit object DataService extends Service[Request] {
-      def deal[A](req: Request[A]): Responses[Request] = req match {
+      def fetch[A](req: Request[A]): A = req match {
         case GetUp =>
-          Responses.add(req, println("get up"))
+          println("get up")
         case Wash =>
-          Responses.add(req, println("wash"))
+          println("wash")
         case MakeBreakfast =>
           println("make breakfast")
-          Responses.add(req, Breakfast(2, 1))
+          Breakfast(2, 1)
         case Eat(b) =>
-          Responses.add(req, println(s"eat $b"))
+          println(s"eat $b")
         case GoOut =>
-          Responses.add(req, println(s"go out"))
+          println(s"go out")
         case TakeBus =>
-          Responses.add(req, println("take a bus"))
+          println("take a bus")
         case Get(q) =>
           println(q)
-          Responses.add(req, Random.nextString(10))
+          Random.nextString(10)
         case Put(s) =>
-          Responses.add(req, println(s))
+          println(s)
       }
     }
-    def fetch[R[_]: Service, A](req: R[A]) = {
-      implicitly[Service[R]].deal(req)
+    def fetch[F[_]: Service, A](req: F[A]) = {
+      implicitly[Service[F]].deal(req)
     }
   }
 
