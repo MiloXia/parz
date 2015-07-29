@@ -191,3 +191,11 @@ object day06 extends App {
   println("-" * 20)
   test.foldMap(FetchEffect)
 }
+/**
+ * Note
+ * 1. 想把Request[A]完全抽离出来变成F[A], 一是为了解偶，二更是希望只需写F[A]以及Service[F]就可以编程
+ * 2. 似乎无法剥离出来，无法根据F[A]以及Responses[F[_]]得到F[Responses[F]]
+ * 3. 剥离的目的是不想在Service里用PartialFunction, PartialFunction拼接存在性能问题以及数量限制（会stackoverflow）
+ * 4. 尝试剥离两天，~>和Requests Moniod 实在无法剥离出来，似乎遇到了NP问题，故决定放弃
+ * 5. 吐槽：函数组合乃函数式生命，PartialFunction orElse 竟然问题如此之大
+ */
