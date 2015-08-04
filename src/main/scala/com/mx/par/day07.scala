@@ -7,9 +7,9 @@ import com.mx.fp.State
 import com.mx.fp.core.{Monad, Monoid}
 
 /**
- * Created by milo on 15-7-28.
+ * Created by milo on 15-8-4.
  */
-object day06 extends App {
+object day07 extends App {
   trait Free[F[_],A] {
     def unit(a: A): Free[F,A] = Done(a)
     def flatMap[B](k: A => Free[F,B]): Free[F,B] = this match {
@@ -73,13 +73,14 @@ object day06 extends App {
   }
 
   trait Request[A]
+  class GotoWork[A] extends Request[A]
   case class Breakfast(egg: Int, milk: Int)
-  case object GetUp extends Request[Unit]
-  case object Wash extends Request[Unit]
-  case object MakeBreakfast extends Request[Breakfast]
-  case class Eat(breakfast: Breakfast) extends Request[Unit]
-  case object GoOut extends Request[Unit]
-  case object TakeBus extends Request[Unit]
+  case object GetUp extends GotoWork[Unit]
+  case object Wash extends GotoWork[Unit]
+  case object MakeBreakfast extends GotoWork[Breakfast]
+  case class Eat(breakfast: Breakfast) extends GotoWork[Unit]
+  case object GoOut extends GotoWork[Unit]
+  case object TakeBus extends GotoWork[Unit]
 
   //Monoid
   case class Requests(l: List[Request[_]]) extends Request[Responses[Request]]
@@ -88,8 +89,9 @@ object day06 extends App {
     def empty = Requests(Nil)
   }
   //test
-  case class Get(q: String) extends Request[String]
-  case class Put(r: String) extends Request[Unit]
+  class IOReq[A] extends Request[A]
+  case class Get(q: String) extends IOReq[String]
+  case class Put(r: String) extends IOReq[Unit]
 
   type FreeRequest[A] = Free[Request, A]
   implicit def dataFetch[A](req: Request[A]): FreeRequest[A] =
@@ -136,9 +138,9 @@ object day06 extends App {
       m match { case a => k(a) }
   }
 
-  object Request {
-    implicit object DataService extends Service[Request] {
-      override def fetch[A](req: Request[A]): A = req match {
+  object GotoWork {
+    implicit object DataService extends Service[GotoWork] {
+      override def fetch[A](req: GotoWork[A]): A = req match {
         case GetUp =>
           println("get up")
         case Wash =>
@@ -152,6 +154,13 @@ object day06 extends App {
           println(s"go out")
         case TakeBus =>
           println("take a bus")
+      }
+    }
+  }
+
+  object IOReq {
+    implicit object DataService extends Service[IOReq] {
+      override def fetch[A](req: IOReq[A]): A = req match {
         case Get(q) =>
           println(q)
           Random.nextString(10)
@@ -162,7 +171,7 @@ object day06 extends App {
   }
 
   object FetchEffect extends (Request ~> Id) { //F[A] is Requests[Responses]
-    def apply[A](nl: Request[A]): Id[A] = nl match {
+   def apply[A](nl: Request[A]): Id[A] = nl match {
       case Requests(l) =>
         if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
         fetch(l)
@@ -170,21 +179,39 @@ object day06 extends App {
     }
 
     def fetch(l: List[Request[_]]): Responses[Request] = {
-      l.par.map{ r =>
+      l.par.map{ case r: GotoWork[_] =>
         println(s"--${Thread.currentThread().getName}")
         Service.fetch(r)
       }.fold(Responses.Monoid.zero)(Responses.Monoid.op)
     }
   }
+
+  class FetchEffect2[F[_] <: Request[_]] extends (Request ~> Id) { //F[A] is Requests[Responses]
+    def apply[A](nl: Request[A]): Id[A] = nl match {
+      case Requests(l) =>
+        if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
+        fetch(l)
+      case _ => throw new Exception("bad cmd")
+    }
+
+    val f: F[_] => Responses[Request] = r => {
+      println(s"--${Thread.currentThread().getName}")
+      Service.fetch(r)
+    }
+
+    def fetch(l: List[Request[_]]): Responses[Request] = {
+      l.par.map(x => f(x.asInstanceOf[F[_]])).fold(Responses.Monoid.zero)(Responses.Monoid.op)
+    }
+  }
   //service
-  trait Service[F[_]] {
-    def deal[A](req: F[A]): Responses[F] = Responses.add(req, fetch(req))
+  trait Service[F[_] <: Request[_]] {
+    def deal[A](req: F[A]): Responses[Request] = Responses.add[Request](req, fetch(req))
     def fetch[A](req: F[A]): A
   }
 
   object Service {
-    def fetch[F[_]: Service, A](req: F[A]) = {
-      implicitly[Service[F]].deal(req)
+    def fetch[F[_] <: Request[_], A](req: F[A])(implicit S: Service[F]) = {
+      S.deal(req)
     }
   }
 
@@ -194,13 +221,5 @@ object day06 extends App {
   println("-" * 20)
   late.foldMap(FetchEffect)
   println("-" * 20)
-  test.foldMap(FetchEffect)
+  test.foldMap(new FetchEffect2[IOReq])
 }
-/**
- * Note
- * 1. 想把Request[A]完全抽离出来变成F[A], 一是为了解偶，二更是希望只需写F[A]以及Service[F]就可以编程
- * 2. 似乎无法剥离出来，无法根据F[A]以及Responses[F[_]]得到F[Responses[F]]
- * 3. 剥离的目的是不想在Service里用PartialFunction, PartialFunction拼接存在性能问题以及数量限制（会stackoverflow）
- * 4. 尝试剥离两天，~>和Requests Moniod 实在无法剥离出来，似乎遇到了NP问题，故决定放弃
- * 5. 吐槽：函数组合乃函数式生命，PartialFunction orElse 竟然问题如此之大
- */
