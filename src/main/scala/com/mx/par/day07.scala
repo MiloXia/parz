@@ -170,23 +170,7 @@ object day07 extends App {
     }
   }
 
-  object FetchEffect extends (Request ~> Id) { //F[A] is Requests[Responses]
-   def apply[A](nl: Request[A]): Id[A] = nl match {
-      case Requests(l) =>
-        if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
-        fetch(l)
-      case _ => throw new Exception("bad cmd")
-    }
-
-    def fetch(l: List[Request[_]]): Responses[Request] = {
-      l.par.map{ case r: GotoWork[_] =>
-        println(s"--${Thread.currentThread().getName}")
-        Service.fetch(r)
-      }.fold(Responses.Monoid.zero)(Responses.Monoid.op)
-    }
-  }
-
-  class FetchEffect2[F[_] <: Request[_]] extends (Request ~> Id) { //F[A] is Requests[Responses]
+  class FetchEffect[F[_] <: Request[_]](service: Service[F]) extends (Request ~> Id) { //F[A] is Requests[Responses]
     def apply[A](nl: Request[A]): Id[A] = nl match {
       case Requests(l) =>
         if(l.length > 1) println(s"Do [${l.mkString(",")}] in parallel")
@@ -196,7 +180,7 @@ object day07 extends App {
 
     val f: F[_] => Responses[Request] = r => {
       println(s"--${Thread.currentThread().getName}")
-      Service.fetch(r)
+      service.deal(r)
     }
 
     def fetch(l: List[Request[_]]): Responses[Request] = {
@@ -209,17 +193,17 @@ object day07 extends App {
     def fetch[A](req: F[A]): A
   }
 
-  object Service {
-    def fetch[F[_] <: Request[_], A](req: F[A])(implicit S: Service[F]) = {
-      S.deal(req)
-    }
-  }
+//  object Service {
+//    def fetch[F[_] <: Request[_], A](req: F[A])(implicit S: Service[F]) = {
+//      S.deal(req)
+//    }
+//  }
 
 
 
-  early.foldMap(FetchEffect)
+  early.foldMap(new FetchEffect(GotoWork.DataService))
   println("-" * 20)
-  late.foldMap(FetchEffect)
+  late.foldMap(new FetchEffect(GotoWork.DataService))
   println("-" * 20)
-  test.foldMap(new FetchEffect2[IOReq])
+  test.foldMap(new FetchEffect(IOReq.DataService))
 }
