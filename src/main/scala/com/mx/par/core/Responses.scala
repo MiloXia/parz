@@ -6,7 +6,7 @@ import com.mx.fp.State
 import com.mx.fp.core.Monoid
 
 case class Responses[F[_]](store: Map[F[_], Any])
-object Responses {//state
+object Responses {//state & cache
   def fetch[F[_], A](req: F[A], resp: Responses[F]): A = State[Responses[F], A] { s =>
     (s.store(req).asInstanceOf[A], s)
   }.run(resp)._1
@@ -21,4 +21,5 @@ object Responses {//state
     }
     val zero: Responses[F] = Responses[F](Map[F[_], Any]())
   }
+  //TODO add cache
 }

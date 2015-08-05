@@ -1,11 +1,9 @@
 package com.mx.par.core
 
-import com.mx.fp.core.{Monad, Monoid}
+import com.mx.fp.core.{Applicative, Monad, Monoid}
 
-/**
- * Created by milo on 15-8-5.
- */
 object Implicit {
+  //request monoid
   implicit def reqMonoid: Monoid[Request[_]] = new Monoid[Request[_]] {
     def op(req1: Request[_], req2: Request[_]): Request[_] = (req1, req2) match {
       case (Requests(l1), Requests(l2)) => Requests(l1 ++ l2)
@@ -17,13 +15,42 @@ object Implicit {
     val zero: Request[_] = Requests.empty
   }
 
+  //lift
   implicit def dataFetch[A](req: Request[A]): Free[Request, A] =
     Blocked(Requests add req, (resp: Responses[Request]) => Done(Responses.fetch(req, resp)))
 
+  //G[A]
   type Id[A] = A
   implicit val IdMonad: Monad[Id] = new Monad[Id] {
     def unit[A](a: A) = a
     def flatMap[A,B](m: Id[A])(k: A => Id[B]): Id[B] =
       m match { case a => k(a) }
+  }
+
+  //run
+  implicit class ToFecthEffect[A](free: Free[Request, A]) {
+    def run[F[_] <: Request[_]](implicit effect: FetchEffect[F]) = free.foldMap(effect)
+  }
+
+  def freeApplicative[F[_]] = new Applicative[({type f[A]=Free[F,A]})#f] {
+    def unit[A](a: A): Free[F, A] = Done(a)
+    def map2[A, B, C](mb1: Free[F, A], mb2: Free[F, B])(f: (A, B) => C)(implicit M: Monoid[F[_]]): Free[F, C] = (mb1, mb2) match {
+      case (Done(a), Done(b)) =>
+        Done(f(a, b))
+      case (Done(a1), Blocked(reqs, cont)) =>
+        Blocked(reqs, (x: Any) => Done(a1).map2(cont(x))(f))
+      case (Blocked(reqs, cont), Done(b1)) =>
+        Blocked(reqs, (x: Any) => cont(x).map2(Done(b1))(f))
+      case (Blocked(reqs1, cont1), Blocked(reqs2, cont2)) =>
+        Blocked(M.op(reqs1, reqs2), (x: Any) => cont1(x).map2(cont2(x))(f))
+    }
+  }
+  implicit class FreeApplicativeOp1[F[_], A, B](free1: Free[F, A => B]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, B] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x))
+  }
+  implicit class FreeApplicativeOp2[F[_], A, B, C](free1: Free[F, (A, B) => C]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, B => C] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _))
   }
 }
