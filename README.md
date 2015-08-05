@@ -12,7 +12,7 @@ I have not been idle :)
   case class Put(r: String) extends IOReq[Unit]
 ```
 
-2. Add functions
+2.Add functions
 
 ```scala
   def get(q: String) = Get(q)
