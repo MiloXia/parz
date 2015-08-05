@@ -23,9 +23,19 @@ I have not been idle :)
 3.Add for-comprehension <br/>
 
 ```scala
-val test = for {
+  val test = for {
     a <- get("get a")
     d <- pure(add _) <*> get("get b") <*> get("get c")
+    _ <- put(a+d)
+  } yield ()
+```
+or
+
+```
+  val addf = (add _).curried
+  val test = for {
+    a <- get("get a")
+    d <- addf `<$>` get("get b") <*> get("get c") //for haskell guys
     _ <- put(a+d)
   } yield ()
 ```

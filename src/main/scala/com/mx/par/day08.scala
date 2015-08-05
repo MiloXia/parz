@@ -47,12 +47,12 @@ object day08 extends App {
   def get(q: String) = Get(q)
   def put(p: String) = Put(p)
   def add(b: String, c: String) = b + c
+  val addf = (add _).curried
   val test = for {
     a <- get("get a")
-    d <- pure(add _) <*> get("get b") <*> get("get c")
+    d <- addf `<$>` get("get b") <*> get("get c")
     _ <- put(a+d)
   } yield ()
-
   object GotoWorkService extends Service[GotoWork] {
     override def fetch[A](req: GotoWork[A]): A = req match {
       case GetUp =>
@@ -76,7 +76,7 @@ object day08 extends App {
     override def fetch[A](req: IOReq[A]): A = req match {
       case Get(q) =>
         println(q)
-        Random.nextString(10)
+        q + "xx"
       case Put(s) =>
         println(s)
     }
@@ -90,5 +90,5 @@ object day08 extends App {
   late.run
   println("-" * 20)
   test.run(FetchEffect(IOReqService))
-
+  println("-" * 20)
 }

@@ -71,4 +71,7 @@ object Implicit {
   }
   //...
   def pure[F[_], A](a: A): Free[F, A] = freeApplicative.unit(a)
+  implicit class FreeApplicativeOp[A, B](f: A => B) {
+    def `<$>`(req: Request[A]): Free[Request, B] = dataFetch(req).map(f)
+  }
 }
