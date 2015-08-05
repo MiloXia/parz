@@ -6,7 +6,7 @@ I have not been idle :)
 
 1. Add type
 
-```
+```scala
   class IOReq[A] extends Request[A]
   case class Get(q: String) extends IOReq[String]
   case class Put(r: String) extends IOReq[Unit]
