@@ -21,15 +21,17 @@ add function
 ```
 
 add for-comprehension <br/>
-Monad is express dependent computation
-Applicative is express parallel computation (independent computation)
+
 ```
 val test = for {
     a <- get("get a")
-    d <- Done(add _) <*> get("get b") <*> get("get c") // parallel computation
+    d <- Done(add _) <*> get("get b") <*> get("get c")
     _ <- put(a+d)
   } yield ()
 ```
+
+Monad is express dependent computation <br/>
+Applicative is express parallel computation (independent computation)<br/>
 
 add service
 
