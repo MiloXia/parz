@@ -14,7 +14,7 @@ I have not been idle :)
 
 2. Add functions
 
-```
+```scala
   def get(q: String) = Get(q)
   def put(p: String) = Put(p)
   def add(b: String, c: String) = b + c
@@ -22,7 +22,7 @@ I have not been idle :)
 
 3. Add for-comprehension <br/>
 
-```
+```scala
 val test = for {
     a <- get("get a")
     d <- Done(add _) <*> get("get b") <*> get("get c")
@@ -35,7 +35,7 @@ Applicative is express parallel computation (independent computation)<br/>
 
 4. Add service
 
-```
+```scala
 object IOReqService extends Service[IOReq] {
     override def fetch[A](req: IOReq[A]): A = req match {
       case Get(q) =>
@@ -50,7 +50,7 @@ object IOReqService extends Service[IOReq] {
 
 5. Add effect & run
 
-```
+```scala
 implicit val fetchEffect = FetchEffect(IOReqService)
 
 test.run
