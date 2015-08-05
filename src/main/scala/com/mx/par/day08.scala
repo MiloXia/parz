@@ -49,7 +49,7 @@ object day08 extends App {
   def add(b: String, c: String) = b + c
   val test = for {
     a <- get("get a")
-    d <- Done(add _) <*> get("get b") <*> get("get c")
+    d <- pure(add _) <*> get("get b") <*> get("get c")
     _ <- put(a+d)
   } yield ()
 

@@ -25,7 +25,7 @@ I have not been idle :)
 ```scala
 val test = for {
     a <- get("get a")
-    d <- Done(add _) <*> get("get b") <*> get("get c")
+    d <- pure(add _) <*> get("get b") <*> get("get c")
     _ <- put(a+d)
   } yield ()
 ```

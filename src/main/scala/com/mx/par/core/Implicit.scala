@@ -53,4 +53,22 @@ object Implicit {
     def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, B => C] =
       freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _))
   }
+  implicit class FreeApplicativeOp3[F[_], A, B, C, D](free1: Free[F, (A, B, C) => D]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, (B, C) => D] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _, _))
+  }
+  implicit class FreeApplicativeOp4[F[_], A, B, C, D, E](free1: Free[F, (A, B, C, D) => E]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, (B, C, D) => E] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _, _, _))
+  }
+  implicit class FreeApplicativeOp5[F[_], A, B, C, D, E, F1, G](free1: Free[F, (A, B, C, D, F1) => G]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, (B, C, D, F1) => G] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _, _, _, _))
+  }
+  implicit class FreeApplicativeOp6[F[_], A, B, C, D, E, F1, G, H](free1: Free[F, (A, B, C, D, F1, G) => H]) {
+    def <*>(free2: Free[F, A])(implicit M: Monoid[F[_]]): Free[F, (B, C, D, F1, G) => H] =
+      freeApplicative.map2(free2, free1)((free2x, free1f) => free1f(free2x, _, _, _, _, _))
+  }
+  //...
+  def pure[F[_], A](a: A): Free[F, A] = freeApplicative.unit(a)
 }
