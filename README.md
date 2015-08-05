@@ -29,13 +29,13 @@ I have not been idle :)
     _ <- put(a+d)
   } yield ()
 ```
-or
+or for haskell guys
 
-```
+```scala
   val addf = (add _).curried
   val test = for {
     a <- get("get a")
-    d <- addf `<$>` get("get b") <*> get("get c") //for haskell guys
+    d <- addf `<$>` get("get b") <*> get("get c")
     _ <- put(a+d)
   } yield ()
 ```
