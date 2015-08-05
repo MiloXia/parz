@@ -4,7 +4,7 @@ I have not been idle :)
 
 ##Open mode
 
-1. Add type
+1.Add type
 
 ```scala
   class IOReq[A] extends Request[A]
@@ -20,7 +20,7 @@ I have not been idle :)
   def add(b: String, c: String) = b + c
 ```
 
-3. Add for-comprehension <br/>
+3.Add for-comprehension <br/>
 
 ```scala
 val test = for {
@@ -33,7 +33,7 @@ val test = for {
 Monad is express dependent computation <br/>
 Applicative is express parallel computation (independent computation)<br/>
 
-4. Add service
+4.Add service
 
 ```scala
 object IOReqService extends Service[IOReq] {
@@ -48,7 +48,7 @@ object IOReqService extends Service[IOReq] {
 
 ```
 
-5. Add effect & run
+5.Add effect & run
 
 ```scala
 implicit val fetchEffect = FetchEffect(IOReqService)
