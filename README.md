@@ -4,7 +4,7 @@ I have not been idle :)
 
 ##Open mode
 
-add type
+1. Add type
 
 ```
   class IOReq[A] extends Request[A]
@@ -12,7 +12,7 @@ add type
   case class Put(r: String) extends IOReq[Unit]
 ```
 
-add function
+2. Add functions
 
 ```
   def get(q: String) = Get(q)
@@ -20,7 +20,7 @@ add function
   def add(b: String, c: String) = b + c
 ```
 
-add for-comprehension <br/>
+3. Add for-comprehension <br/>
 
 ```
 val test = for {
@@ -33,7 +33,7 @@ val test = for {
 Monad is express dependent computation <br/>
 Applicative is express parallel computation (independent computation)<br/>
 
-add service
+4. Add service
 
 ```
 object IOReqService extends Service[IOReq] {
@@ -48,7 +48,7 @@ object IOReqService extends Service[IOReq] {
 
 ```
 
-add effect & run
+5. Add effect & run
 
 ```
 implicit val fetchEffect = FetchEffect(IOReqService)
