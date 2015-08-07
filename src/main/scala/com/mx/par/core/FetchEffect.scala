@@ -37,6 +37,7 @@ trait Service[F[_] <: Request[_]] {
  * forkjoin
  * 1. JDK1.7 ForkJoinPool forkjoinTask
  * 2. JDK JUC + custom thread pool
+ * 2.5 JDK Par + Executor
  * 3. Akka Actor router + routees
  * 4. Kilim Task
  * 5. Scala Future + callback + Promise
