@@ -30,3 +30,14 @@ trait Service[F[_] <: Request[_]] {
   def deal[A](req: F[A]): Responses[Request] = Responses.add[Request](req, fetch(req))
   def fetch[A](req: F[A]): A
 }
+
+/**
+ * TODO test
+ * Parallel computation framework
+ * forkjoin
+ * 1. JDK1.7 ForkJoinPool forkjoinTask
+ * 2. JDK JUC + custom thread pool
+ * 3. Akka Actor router + routees
+ * 4. Kilim Task
+ * 5. Scala Future + callback + Promise
+ */
