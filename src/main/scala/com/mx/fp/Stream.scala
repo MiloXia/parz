@@ -52,6 +52,11 @@ trait Stream[+A] {
   def map[B](p: A => B): Stream[B] = {
     foldRight(empty[B]){(h,t) => cons(p(h), t)}
   }
+
+  def f[B](op: (A, => Stream[B]) => Stream[B]): Stream[B] = foldRight(empty[B])(op)
+  def g[B, C >: A](p: C => B)(h: C ,t: => Stream[B]): Stream[B] = cons(p(h), t)
+  def map_1[B](p: A => B): Stream[B] = (f[B] _ compose g[B, A])(p)
+
   def flatMap_1[B](f: A => Stream[B]): Stream[B] = {
     foldRight(empty[B]){(h,t) => f(h) #++ t}
   }
